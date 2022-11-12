@@ -25,13 +25,13 @@ contract Domains is ERC721URIStorage {
     string svgPartTwo = "</text></svg>";
 
     mapping(string => address) public domains;
-    mapping(string => string) public records;
+    mapping(string => string) public arguments;
 
     address payable public owner;
 
     constructor(string memory _tld)
         payable
-        ERC721("Erik's Name Service", "NNS")
+        ERC721("Service", "NNS")
     {
         owner = payable(msg.sender);
         tld = _tld;
@@ -41,7 +41,7 @@ contract Domains is ERC721URIStorage {
     function register(string calldata name) public payable {
         require(domains[name] == address(0));
 
-        uint256 _price = price(name);
+        uint256 _price = 1 * 10**19;
         require(msg.value >= _price, "Not enough Matic paid");
 
         // Combine the name passed into the function  with the TLD
@@ -50,7 +50,7 @@ contract Domains is ERC721URIStorage {
         string memory finalSvg = string(
             abi.encodePacked(svgPartOne, _name, svgPartTwo)
         );
-        uint256 newRecordId = _tokenIds.current();
+        uint256 newArgumentId = _tokenIds.current();
         uint256 length = StringUtils.strlen(name);
         string memory strLen = Strings.toString(length);
 
@@ -58,7 +58,7 @@ contract Domains is ERC721URIStorage {
             "Registering %s.%s on the contract with tokenID %d",
             name,
             tld,
-            newRecordId
+            newArgumentId
         );
 
         // Create the JSON metadata of our NFT. We do this by combining strings and encoding as base64
@@ -66,7 +66,7 @@ contract Domains is ERC721URIStorage {
             abi.encodePacked(
                 '{"name": "',
                 _name,
-                '", "description": "A domain on the Eriks name service", "image": "data:image/svg+xml;base64,',
+                '", "description": "A domain on the service", "image": "data:image/svg+xml;base64,',
                 Base64.encode(bytes(finalSvg)),
                 '","length":"',
                 strLen,
@@ -86,24 +86,11 @@ contract Domains is ERC721URIStorage {
             "--------------------------------------------------------\n"
         );
 
-        _safeMint(msg.sender, newRecordId);
-        _setTokenURI(newRecordId, finalTokenUri);
+        _safeMint(msg.sender, newArgumentId);
+        _setTokenURI(newArgumentId, finalTokenUri);
         domains[name] = msg.sender;
 
         _tokenIds.increment();
-    }
-
-    // This function will give us the price of a domain based on length
-    function price(string calldata name) public pure returns (uint256) {
-        uint256 len = StringUtils.strlen(name);
-        require(len > 0);
-        if (len == 3) {
-            return 5 * 10**17; // 5 MATIC = 5 000 000 000 000 000 000 (18 decimals). We're going with 0.5 Matic cause the faucets don't give a lot
-        } else if (len == 4) {
-            return 3 * 10**17; // To charge smaller amounts, reduce the decimals. This is 0.3
-        } else {
-            return 1 * 10**17;
-        }
     }
 
     // Other functions unchanged
@@ -113,19 +100,22 @@ contract Domains is ERC721URIStorage {
         return domains[name];
     }
 
-    function setRecord(string calldata name, string calldata record) public {
+    function setArgument(string calldata name, string calldata argument) public {
         // Check that the owner is the transaction sender
         require(domains[name] == msg.sender);
-        records[name] = record;
+        arguments[name] = argument;
     }
 
-    function getRecord(string calldata name)
+    function getArgument(string calldata name)
         public
         view
         returns (string memory)
     {
-        return records[name];
+        return arguments[name];
     }
+
+
+
 
     modifier onlyOwner() {
         require(isOwner());
@@ -135,6 +125,8 @@ contract Domains is ERC721URIStorage {
     function isOwner() public view returns (bool) {
         return msg.sender == owner;
     }
+
+
 
     function withdraw() public onlyOwner {
         uint256 amount = address(this).balance;
